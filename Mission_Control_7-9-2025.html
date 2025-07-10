@@ -1,0 +1,3216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Control - Weekly Planner</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3d'/%3E%3Cpath d='M50 20L70 40L50 80L30 40Z' fill='%234a9eff' opacity='0.9'/%3E%3Ccircle cx='50' cy='35' r='8' fill='%239d4edd'/%3E%3Cpath d='M35 50L50 45L65 50' stroke='%23e0e6ed' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        :root {
+            --space-dark: #1a1f3d;
+            --space-darker: #0f1427;
+            --space-light: #2a3150;
+            --space-lighter: #3a4170;
+            --glow-blue: #4a9eff;
+            --glow-purple: #9d4edd;
+            --text-primary: #e0e6ed;
+            --text-secondary: #a0a9b8;
+            --border-color: #3a4160;
+            --success-green: #4caf50;
+            
+            /* Category Colors - Fixed set of 8 */
+            --cat-1: #2196f3;
+            --cat-2: #9c27b0;
+            --cat-3: #4caf50;
+            --cat-4: #dc143c;
+            --cat-5: #ff8c00;
+            --cat-6: #d4af00;
+            --cat-7: #20b2aa;
+            --cat-8: #a86440;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 400;
+            background-color: var(--space-dark);
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent);
+            background-size: 200px 200px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            color: var(--text-primary);
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: rgba(26, 31, 61, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            overflow-x: hidden;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 3em;
+            font-weight: 300;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, var(--glow-blue), var(--glow-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(74, 158, 255, 0.5);
+        }
+        
+        /* Top Controls Bar */
+        .top-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        /* Notification System - Fixed Position */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--space-light);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 9999;
+            max-width: 350px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-color: var(--success-green);
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .notification.error {
+            border-color: var(--cat-4);
+            background: rgba(220, 20, 60, 0.2);
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+        
+        .tab.active {
+            background: var(--space-light);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            border-bottom-color: var(--space-light);
+            box-shadow: 0 0 15px rgba(74, 158, 255, 0.3);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Week Navigation */
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(42, 49, 80, 0.3);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .week-display {
+            font-size: 1.5em;
+            color: var(--glow-blue);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .week-nav {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .week-nav button, .btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            background: var(--space-light);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .week-nav button:hover, .btn:hover {
+            background: var(--glow-blue);
+            border-color: var(--glow-blue);
+            box-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        /* Progress Section */
+        .progress-section {
+            margin-bottom: 25px;
+            padding: 25px;
+            background: rgba(42, 49, 80, 0.5);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .progress-title {
+            font-size: 1.2em;
+            color: var(--glow-blue);
+            font-weight: 500;
+        }
+        
+        .progress-percentage {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--glow-purple);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: var(--space-darker);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--glow-blue), var(--glow-purple));
+            border-radius: 15px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 15px rgba(74, 158, 255, 0.5);
+        }
+        
+        .category-summary {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            font-size: 0.95em;
+        }
+        
+        .category-stat {
+            color: var(--text-secondary);
+            padding: 5px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+        }
+        
+        /* Filter Controls */
+        .filter-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        
+        .filter-btn {
+            padding: 8px 18px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-btn .color-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .filter-btn.active {
+            background: var(--glow-blue);
+            border-color: var(--glow-blue);
+            color: white;
+            box-shadow: 0 0 15px rgba(74, 158, 255, 0.4);
+        }
+        
+        .filter-btn.active .color-dot {
+            opacity: 1;
+        }
+        
+        .toggle-completed {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 25px;
+        }
+        
+        .toggle-completed:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(300px, 1fr) minmax(0, 3fr);
+            gap: 25px;
+            margin-bottom: 30px;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        @media (min-width: 1800px) {
+            .main-grid {
+                grid-template-columns: minmax(350px, 1fr) minmax(0, 4fr);
+            }
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .mission-section, .docking-section {
+            background: rgba(42, 49, 80, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .mission-section:hover, .docking-section:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border-color: var(--glow-blue);
+        }
+        
+        .mission-section.no-drop {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .section-title {
+            background: linear-gradient(135deg, var(--space-darker), var(--space-light));
+            color: var(--text-primary);
+            padding: 15px;
+            margin: -25px -25px 20px -25px;
+            border-radius: 15px 15px 0 0;
+            font-weight: 500;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* Task List */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 60px;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: move;
+            min-height: 50px;
+        }
+        
+        .task-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .task-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .task-item.completed {
+            opacity: 0.6;
+        }
+        
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+        
+        .task-item.overdue {
+            border-color: var(--cat-4);
+            box-shadow: 0 0 8px rgba(220, 20, 60, 0.5);
+        }
+        
+        .task-item.overdue.completed {
+            box-shadow: none;
+        }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--glow-blue);
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        
+        .task-text {
+            flex: 1;
+            padding: 5px 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-primary);
+            font-size: 14px;
+            border-radius: 6px;
+            resize: none;
+            overflow: hidden;
+            font-family: 'Exo 2', sans-serif;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .task-text:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--glow-blue);
+            box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
+        }
+        
+        .task-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .category-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .category-dot:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 12px currentColor;
+        }
+        
+        .category-dot.cat-none { background: var(--text-secondary); }
+        .category-dot.cat-1 { background: var(--cat-1); }
+        .category-dot.cat-2 { background: var(--cat-2); }
+        .category-dot.cat-3 { background: var(--cat-3); }
+        .category-dot.cat-4 { background: var(--cat-4); }
+        .category-dot.cat-5 { background: var(--cat-5); }
+        .category-dot.cat-6 { background: var(--cat-6); }
+        .category-dot.cat-7 { background: var(--cat-7); }
+        .category-dot.cat-8 { background: var(--cat-8); }
+        
+        .star-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            padding: 2px;
+        }
+        
+        .star-btn:hover {
+            color: var(--glow-purple);
+            transform: scale(1.2) rotate(72deg);
+        }
+        
+        .star-btn.starred {
+            color: var(--glow-purple);
+            text-shadow: 0 0 12px rgba(157, 78, 221, 0.8);
+        }
+        
+        .delete-btn {
+            background: rgba(220, 20, 60, 0.2);
+            color: var(--cat-4);
+            border: 1px solid var(--cat-4);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .delete-btn:hover {
+            background: var(--cat-4);
+            color: white;
+            box-shadow: 0 0 12px rgba(220, 20, 60, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .add-task-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border: 2px dashed var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+        
+        .add-task-btn:hover {
+            background: rgba(74, 158, 255, 0.1);
+            border-color: var(--glow-blue);
+            color: var(--glow-blue);
+            box-shadow: 0 0 15px rgba(74, 158, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Weekly Calendar - Responsive Grid */
+        .weekly-calendar {
+            display: grid;
+            gap: 20px;
+            width: 100%;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+        
+        /* Ensure no horizontal overflow */
+        #mission-control {
+            overflow-x: hidden;
+        }
+        
+        /* For very wide screens, allow up to 7 columns */
+        @media (min-width: 2200px) {
+            .weekly-calendar {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+        
+        /* For medium screens, increase minimum width to force wrapping sooner */
+        @media (max-width: 1400px) {
+            .weekly-calendar {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+        
+        /* For small screens, go to 2 columns max */
+        @media (max-width: 900px) {
+            .weekly-calendar {
+                grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+            }
+        }
+        
+        /* Mobile - single column */
+        @media (max-width: 600px) {
+            .weekly-calendar {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .day-column {
+            background: rgba(42, 49, 80, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            min-height: 250px;
+        }
+        
+        .day-column.drag-over {
+            background: rgba(74, 158, 255, 0.15);
+            border-color: var(--glow-blue);
+            box-shadow: 0 0 25px rgba(74, 158, 255, 0.4);
+        }
+        
+        .day-header {
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--glow-blue);
+            color: var(--glow-blue);
+            text-transform: uppercase;
+            font-size: 1em;
+            letter-spacing: 1.5px;
+        }
+        
+        /* Deep Space Section */
+        .deep-space-section {
+            background: rgba(42, 49, 80, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 25px;
+        }
+        
+        .deep-space-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--glow-purple);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.1em;
+        }
+        
+        .rich-text-toolbar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .toolbar-btn {
+            padding: 6px 10px;
+            background: var(--space-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .toolbar-btn:hover {
+            background: var(--glow-blue);
+            border-color: var(--glow-blue);
+            transform: translateY(-1px);
+        }
+        
+        .toolbar-btn.active {
+            background: var(--glow-purple);
+            border-color: var(--glow-purple);
+        }
+        
+        .deep-space-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Exo 2', sans-serif;
+            font-size: 15px;
+            line-height: 1.8;
+            overflow-y: auto;
+        }
+        
+        .deep-space-editor:focus {
+            outline: none;
+            border-color: var(--glow-blue);
+            box-shadow: 0 0 15px rgba(74, 158, 255, 0.3);
+        }
+        
+        .deep-space-editor ul {
+            padding-left: 30px;
+            margin: 10px 0;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--space-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 35px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            animation: modalSlide 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        @keyframes modalSlide {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            font-size: 1.5em;
+            margin-bottom: 25px;
+            color: var(--glow-blue);
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-group label {
+            color: var(--text-secondary);
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--glow-blue);
+            box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .recurrence-options {
+            display: none;
+            padding-left: 25px;
+            gap: 15px;
+            flex-direction: column;
+            border-left: 3px solid var(--glow-purple);
+            margin-left: 10px;
+        }
+        
+        .recurrence-options.active {
+            display: flex;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        /* Undo/Redo Controls */
+        .undo-redo-controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+        
+        .undo-btn, .redo-btn {
+            padding: 12px;
+            background: var(--space-light);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .undo-btn:hover, .redo-btn:hover {
+            background: var(--glow-blue);
+            box-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+            transform: scale(1.1);
+        }
+        
+        .undo-btn:disabled, .redo-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .undo-btn:disabled:hover, .redo-btn:disabled:hover {
+            background: var(--space-light);
+            box-shadow: none;
+            transform: none;
+        }
+        
+        /* Template Cards */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+        
+        .template-card {
+            background: rgba(42, 49, 80, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .template-card:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px);
+            border-color: var(--glow-blue);
+        }
+        
+        .template-name {
+            font-size: 1.3em;
+            color: var(--glow-blue);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .template-date {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        
+        .template-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .template-btn {
+            flex: 1;
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            background: var(--space-light);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .template-btn:hover {
+            background: var(--glow-blue);
+            border-color: var(--glow-blue);
+            transform: translateY(-1px);
+        }
+        
+        .template-btn.delete:hover {
+            background: var(--cat-4);
+            border-color: var(--cat-4);
+        }
+        
+        /* Archive Cards */
+        .archive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+        
+        .archive-card {
+            background: rgba(42, 49, 80, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .archive-card:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px);
+            border-color: var(--glow-purple);
+        }
+        
+        .archive-week {
+            font-size: 1.2em;
+            color: var(--glow-purple);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .archive-stats {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        
+        /* Settings - Better Layout */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .settings-section {
+            background: rgba(42, 49, 80, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .settings-section.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .settings-title {
+            font-size: 1.3em;
+            color: var(--glow-blue);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .category-setting {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .category-setting input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .category-setting input[type="text"] {
+            flex: 1;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+        
+        .color-selector {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-option.selected {
+            border-color: var(--text-primary);
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        .save-settings-btn {
+            background: var(--success-green);
+            border-color: var(--success-green);
+            margin-top: 20px;
+            grid-column: 1 / -1;
+            justify-self: center;
+            padding: 12px 40px;
+        }
+        
+        .save-settings-btn:hover {
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+        }
+        
+        /* Export Modal */
+        .export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .export-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .export-option:hover {
+            background: rgba(74, 158, 255, 0.1);
+            border-color: var(--glow-blue);
+        }
+        
+        .export-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .export-option label {
+            flex: 1;
+            cursor: pointer;
+        }
+        
+        .export-description {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+        
+        /* Archive Preview Modal */
+        .archive-preview {
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .archive-preview-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .archive-preview-week {
+            font-size: 1.3em;
+            color: var(--glow-purple);
+            margin-bottom: 10px;
+        }
+        
+        .archive-preview-stats {
+            color: var(--text-secondary);
+        }
+        
+        .archive-preview-section {
+            margin-bottom: 30px;
+        }
+        
+        .archive-preview-title {
+            font-size: 1.1em;
+            color: var(--glow-blue);
+            margin-bottom: 15px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .archive-task {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .archive-task.completed {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        
+        .archive-task.completed-late {
+            border-left: 3px solid var(--cat-4);
+            padding-left: 12px;
+        }
+        
+        .archive-task.completed-late::after {
+            content: ' (late)';
+            color: var(--cat-4);
+            font-size: 0.9em;
+            margin-left: 5px;
+        }
+        
+        .archive-task-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .week-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toggle-completed {
+                margin-left: 0;
+                justify-content: center;
+            }
+            
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .top-controls {
+                flex-direction: column;
+            }
+            
+            .quick-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            @page {
+                margin: 0.3in;
+                size: letter portrait;
+            }
+            
+            body {
+                background: white;
+                color: black;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                background: white;
+                padding: 10px;
+                border-radius: 0;
+            }
+            
+            .tabs, .week-nav, .filter-controls, .action-buttons, 
+            .undo-redo-controls, .add-task-btn, .task-controls,
+            .rich-text-toolbar, .progress-section, .top-controls,
+            .notification {
+                display: none !important;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+                color: black;
+                margin-bottom: 10px;
+                page-break-after: avoid;
+            }
+            
+            .week-header {
+                padding: 10px;
+                margin-bottom: 15px;
+                border: 1px solid #ddd;
+                page-break-after: avoid;
+            }
+            
+            .main-grid {
+                display: block;
+                page-break-after: always;
+            }
+            
+            .sidebar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+            }
+            
+            .weekly-calendar {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                page-break-inside: avoid;
+            }
+            
+            .day-column {
+                page-break-inside: avoid;
+                border: 1px solid #ddd;
+                background: white;
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .section-title, .day-header {
+                background: #f0f0f0;
+                color: black;
+                font-size: 0.9em;
+                padding: 5px;
+                margin: -10px -10px 10px -10px;
+            }
+            
+            .task-item {
+                border: 1px solid #ddd;
+                background: white;
+                page-break-inside: avoid;
+                padding: 5px;
+                margin-bottom: 5px;
+            }
+            
+            .task-text {
+                color: black;
+            }
+            
+            .deep-space-section {
+                page-break-before: always;
+                border: 1px solid #ddd;
+                padding: 15px;
+            }
+            
+            .deep-space-editor {
+                min-height: 400px;
+                border: 1px solid #ddd;
+                color: black;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MISSION CONTROL</h1>
+        
+        <div class="notification" id="notification"></div>
+        
+        <div class="top-controls">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('mission-control')">Mission Control</button>
+                <button class="tab" onclick="switchTab('templates')">Templates</button>
+                <button class="tab" onclick="switchTab('archives')">Archives</button>
+                <button class="tab" onclick="switchTab('settings')">Settings</button>
+            </div>
+            <div class="quick-actions">
+                <button class="btn btn-quick-add" onclick="showQuickAddModal()">+ Quick Add</button>
+                <button class="btn" onclick="printWeek()">Print View</button>
+            </div>
+        </div>
+        
+        <!-- Mission Control Tab -->
+        <div id="mission-control" class="tab-content active">
+            <div class="week-header">
+                <div class="week-display" id="weekDisplay"></div>
+                <div class="week-nav">
+                    <button onclick="changeWeek(-1)">← Previous Week</button>
+                    <button onclick="goToCurrentWeek()">Current Week</button>
+                    <button onclick="changeWeek(1)">Next Week →</button>
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-header">
+                    <div class="progress-title">Mission Status</div>
+                    <div class="progress-percentage" id="progressPercentage">0%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="category-summary" id="categorySummary"></div>
+            </div>
+            
+            <div class="filter-controls">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterTasks('all')">All</button>
+                    <div id="categoryFilters" style="display: contents;"></div>
+                </div>
+                <label class="toggle-completed">
+                    <input type="checkbox" id="hideCompleted" onchange="toggleCompletedVisibility()">
+                    Hide Completed
+                </label>
+            </div>
+            
+            <div class="main-grid">
+                <div class="sidebar">
+                    <div class="mission-section no-drop" id="missionsSection">
+                        <div class="section-title">CRITICAL MANEUVERS</div>
+                        <div class="task-list" id="missionsList"></div>
+                    </div>
+                    
+                    <div class="docking-section">
+                        <div class="section-title">DOCKING STATION</div>
+                        <div class="task-list" id="dockingList"></div>
+                        <button class="add-task-btn" onclick="addTask('dockingList')">+ Add Task</button>
+                    </div>
+                </div>
+                
+                <div class="weekly-calendar" id="weeklyCalendar">
+                    <!-- Days will be dynamically created here -->
+                </div>
+            </div>
+            
+            <div class="deep-space-section">
+                <div class="deep-space-title">DEEP SPACE</div>
+                <div class="rich-text-toolbar">
+                    <button class="toolbar-btn" onclick="formatText('bold')" title="Bold">B</button>
+                    <button class="toolbar-btn" onclick="formatText('italic')" title="Italic">I</button>
+                    <button class="toolbar-btn" onclick="formatText('strikethrough')" title="Strikethrough">S</button>
+                    <button class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="Bullet List">•</button>
+                </div>
+                <div class="deep-space-editor" id="deepSpaceEditor" contenteditable="true"></div>
+            </div>
+        </div>
+        
+        <!-- Templates Tab -->
+        <div id="templates" class="tab-content">
+            <h2 style="color: var(--glow-blue); font-weight: 300; margin-bottom: 25px;">Mission Templates</h2>
+            <button class="btn" onclick="saveAsTemplate()" style="margin-bottom: 25px;">Save Current Week as Template</button>
+            <div class="template-grid" id="templatesList"></div>
+        </div>
+        
+        <!-- Archives Tab -->
+        <div id="archives" class="tab-content">
+            <h2 style="color: var(--glow-purple); font-weight: 300; margin-bottom: 25px;">Mission Archives</h2>
+            <div class="archive-grid" id="archivesList"></div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <h2 style="color: var(--glow-blue); font-weight: 300; margin-bottom: 25px;">Mission Settings</h2>
+            
+            <div class="settings-grid">
+                <div class="settings-section">
+                    <div class="settings-title">Categories</div>
+                    <div id="categoriesSettings"></div>
+                </div>
+                
+                <div class="settings-section">
+                    <div class="settings-title">Preferences</div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">Date Format</label>
+                        <select id="dateFormatSelect" style="padding: 10px 15px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 15px; width: 100%;">
+                            <option value="US">MM/DD/YYYY</option>
+                            <option value="EU">DD/MM/YYYY</option>
+                            <option value="ISO">YYYY-MM-DD</option>
+                            <option value="LONG">DD Month YYYY</option>
+                        </select>
+                    </div>
+                    
+                    <div class="settings-title" style="margin-top: 30px;">Data Management</div>
+                    <div class="action-buttons" style="justify-content: flex-start; margin-top: 15px; flex-direction: column; gap: 10px;">
+                        <button class="btn" onclick="showExportModal()" style="width: 100%;">Export Data</button>
+                        <button class="btn" onclick="importData()" style="width: 100%;">Import Data</button>
+                        <button class="btn" onclick="backupNow()" style="width: 100%;">Backup Now</button>
+                    </div>
+                </div>
+                
+                <button class="btn save-settings-btn" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Add Modal -->
+    <div id="quickAddModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Quick Add</div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Task:</label>
+                    <input type="text" id="quickAddTaskName" placeholder="Enter task name...">
+                </div>
+                <div class="form-group">
+                    <label>Category:</label>
+                    <select id="quickAddCategory"></select>
+                </div>
+                <div class="form-group">
+                    <label>Week:</label>
+                    <select id="quickAddWeek"></select>
+                </div>
+                <div class="form-group">
+                    <label>Day:</label>
+                    <select id="quickAddDay">
+                        <option value="docking">Docking Station</option>
+                        <option value="monday">Monday</option>
+                        <option value="tuesday">Tuesday</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="thursday">Thursday</option>
+                        <option value="friday">Friday</option>
+                        <option value="saturday">Saturday</option>
+                        <option value="sunday">Sunday</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="quickAddRepeats" onchange="toggleRecurrence()">
+                        Repeats?
+                    </label>
+                </div>
+                <div class="recurrence-options" id="recurrenceOptions">
+                    <div class="form-group">
+                        <label>Every:</label>
+                        <select id="quickAddFrequency">
+                            <option value="day">Day</option>
+                            <option value="week">Week</option>
+                            <option value="month">Month</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Until:</label>
+                        <input type="date" id="quickAddUntil">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideQuickAddModal()">Cancel</button>
+                <button class="btn btn-quick-add" onclick="quickAddTask()">Add Task</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Export Data</div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <div class="export-option">
+                        <input type="radio" name="exportFormat" id="exportJSON" value="json" checked>
+                        <label for="exportJSON">
+                            <div>JSON Format</div>
+                            <div class="export-description">Complete data backup, perfect for importing later</div>
+                        </label>
+                    </div>
+                    <div class="export-option">
+                        <input type="radio" name="exportFormat" id="exportCSV" value="csv">
+                        <label for="exportCSV">
+                            <div>CSV Format</div>
+                            <div class="export-description">Opens in Excel, great for analysis</div>
+                        </label>
+                    </div>
+                    <div class="export-option">
+                        <input type="radio" name="exportFormat" id="exportTXT" value="txt">
+                        <label for="exportTXT">
+                            <div>Text Format</div>
+                            <div class="export-description">Simple text summary, easy to read</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideExportModal()">Cancel</button>
+                <button class="btn btn-quick-add" onclick="executeExport()">Export</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Archive Preview Modal -->
+    <div id="archiveModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">Archive View</div>
+            <div class="modal-body">
+                <div id="archivePreviewContent" class="archive-preview"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideArchiveModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recurring Task Modal -->
+    <div id="recurringModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Recurring Task</div>
+            <div class="modal-body">
+                <p id="recurringMessage"></p>
+                <div class="form-group">
+                    <label>
+                        <input type="radio" name="recurringAction" value="single" checked>
+                        Just this task
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="radio" name="recurringAction" value="future">
+                        This and all future tasks
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideRecurringModal()">Cancel</button>
+                <button class="btn btn-quick-add" onclick="executeRecurringAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Undo/Redo Controls -->
+    <div class="undo-redo-controls">
+        <button class="undo-btn" id="undoBtn" onclick="undo()" title="Undo (Ctrl/Cmd + Z)" disabled>↶</button>
+        <button class="redo-btn" id="redoBtn" onclick="redo()" title="Redo (Ctrl/Cmd + Y)" disabled>↷</button>
+    </div>
+    
+    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
+    
+    <script>
+        // Global variables
+        let currentWeekStart = getMonday(new Date());
+        let data = {};
+        let categories = [
+            { id: "cat-1", name: "Work", color: "#2196f3", isActive: true },
+            { id: "cat-2", name: "Personal", color: "#9c27b0", isActive: true },
+            { id: "cat-3", name: "Family", color: "#4caf50", isActive: true },
+            { id: "cat-4", name: "Urgent", color: "#dc143c", isActive: false },
+            { id: "cat-5", name: "Health", color: "#ff8c00", isActive: false },
+            { id: "cat-6", name: "Learning", color: "#d4af00", isActive: false },
+            { id: "cat-7", name: "Social", color: "#20b2aa", isActive: false },
+            { id: "cat-8", name: "Other", color: "#a86440", isActive: false }
+        ];
+        let templates = {};
+        let currentFilter = 'all';
+        let hideCompleted = false;
+        let undoStack = [];
+        let redoStack = [];
+        let draggedElement = null;
+        let draggedFrom = null;
+        let deepSpaceTimeout = null;
+        let dateFormat = 'US';
+        let hasUnsavedSettings = false;
+        let recurringAction = null;
+        let recurringTaskId = null;
+        let recurringActionType = null;
+        
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const categoryColors = [
+            "#2196f3", "#9c27b0", "#4caf50", "#dc143c",
+            "#ff8c00", "#d4af00", "#20b2aa", "#a86440"
+        ];
+        
+        // Utility functions
+        function getMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+        
+        function getWeekKey(date) {
+            return date.toISOString().split('T')[0];
+        }
+        
+        function formatDate(date, format = null) {
+            const d = new Date(date);
+            const fmt = format || dateFormat;
+            
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            const day = d.getDate();
+            const month = d.getMonth() + 1;
+            const year = d.getFullYear();
+            
+            switch(fmt) {
+                case 'US':
+                    return `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}/${year}`;
+                case 'EU':
+                    return `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+                case 'ISO':
+                    return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                case 'LONG':
+                    return `${day} ${months[d.getMonth()]} ${year}`;
+                default:
+                    return d.toLocaleDateString();
+            }
+        }
+        
+        function formatWeekDisplay(date) {
+            const endDate = new Date(date);
+            endDate.setDate(endDate.getDate() + 6);
+            return `WEEK OF: ${formatDate(date)}`;
+        }
+        
+        function generateTaskId() {
+            return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        function getTodayDateString() {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Week navigation
+        function changeWeek(direction) {
+            saveState();
+            saveCurrentWeekData();
+            currentWeekStart = new Date(currentWeekStart);
+            currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+            loadWeek();
+        }
+        
+        function goToCurrentWeek() {
+            saveState();
+            saveCurrentWeekData();
+            currentWeekStart = getMonday(new Date());
+            loadWeek();
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            if (hasUnsavedSettings && document.querySelector('.tab.active').textContent === 'Settings') {
+                if (!confirm('You have unsaved settings. Switch tabs anyway?')) {
+                    return;
+                }
+                hasUnsavedSettings = false;
+            }
+            
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            if (tabName === 'templates') loadTemplates();
+            if (tabName === 'archives') loadArchives();
+            if (tabName === 'settings') loadSettings();
+        }
+        
+        // Create calendar days
+        function createCalendarDays() {
+            const calendar = document.getElementById('weeklyCalendar');
+            calendar.innerHTML = '';
+            
+            days.forEach(day => {
+                const dayColumn = document.createElement('div');
+                dayColumn.className = 'day-column';
+                dayColumn.dataset.day = day;
+                
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = day;
+                
+                const dayList = document.createElement('div');
+                dayList.className = 'task-list';
+                dayList.id = `day-${day}`;
+                
+                dayColumn.appendChild(dayHeader);
+                dayColumn.appendChild(dayList);
+                
+                // Add drag event listeners
+                dayColumn.addEventListener('dragover', handleDragOver);
+                dayColumn.addEventListener('dragleave', handleDragLeave);
+                dayColumn.addEventListener('drop', handleDrop);
+                
+                calendar.appendChild(dayColumn);
+            });
+        }
+        
+        // Task creation
+        function addTask(listId) {
+            saveState();
+            
+            const taskId = generateTaskId();
+            const taskItem = createTaskElement(taskId, '', false, 'cat-none', false);
+            
+            const list = document.getElementById(listId);
+            list.appendChild(taskItem);
+            
+            // Focus on the new task
+            const textArea = taskItem.querySelector('.task-text');
+            textArea.focus();
+            
+            // Add to data structure
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey]) data[weekKey] = { tasks: {}, deepSpace: '' };
+            
+            data[weekKey].tasks[taskId] = {
+                id: taskId,
+                name: '',
+                category: 'cat-none',
+                status: 'unscheduled',
+                createdDate: getTodayDateString(),
+                scheduledDate: null,
+                completedDate: null,
+                originalDueDate: null,
+                wasOverdue: false,
+                completedLate: false,
+                linkedLocations: ['docking'],
+                recurringId: null
+            };
+            
+            saveData();
+            updateProgress();
+        }
+        
+        function createTaskElement(taskId, taskName, completed, category, starred, target = 'docking') {
+            const taskItem = document.createElement('div');
+            taskItem.className = 'task-item';
+            taskItem.dataset.taskId = taskId;
+            taskItem.draggable = true;
+            
+            if (completed) taskItem.classList.add('completed');
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'task-checkbox';
+            checkbox.checked = completed;
+            checkbox.onchange = () => toggleTaskCompletion(taskId);
+            
+            const textArea = document.createElement('textarea');
+            textArea.className = 'task-text';
+            textArea.value = taskName;
+            textArea.rows = 1;
+            textArea.placeholder = 'Enter task...';
+            
+            // Auto-resize textarea
+            textArea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+                updateTaskName(taskId, this.value);
+            });
+            
+            // Prevent Enter key from creating new line
+            textArea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.blur();
+                }
+            });
+            
+            const controls = document.createElement('div');
+            controls.className = 'task-controls';
+            
+            const categoryDot = document.createElement('div');
+            categoryDot.className = `category-dot ${category}`;
+            categoryDot.onclick = () => cycleCategory(taskId);
+            
+            const starBtn = document.createElement('button');
+            starBtn.className = starred ? 'star-btn starred' : 'star-btn';
+            starBtn.innerHTML = '★';
+            starBtn.onclick = () => toggleStar(taskId);
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '×';
+            deleteBtn.onclick = () => deleteTask(taskId);
+            
+            controls.appendChild(categoryDot);
+            if (target !== 'missions') {
+                controls.appendChild(starBtn);
+            }
+            controls.appendChild(deleteBtn);
+            
+            taskItem.appendChild(checkbox);
+            taskItem.appendChild(textArea);
+            taskItem.appendChild(controls);
+            
+            // Drag event listeners
+            taskItem.addEventListener('dragstart', handleDragStart);
+            taskItem.addEventListener('dragend', handleDragEnd);
+            
+            // Trigger resize to set initial height
+            setTimeout(() => {
+                textArea.style.height = 'auto';
+                textArea.style.height = textArea.scrollHeight + 'px';
+            }, 0);
+            
+            return taskItem;
+        }
+        
+        // Task operations
+        function updateTaskName(taskId, newName) {
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey] || !data[weekKey].tasks[taskId]) return;
+            
+            const cleanName = newName.trim();
+            data[weekKey].tasks[taskId].name = newName;
+            
+            // Update all linked instances
+            const linkedLocations = data[weekKey].tasks[taskId].linkedLocations;
+            linkedLocations.forEach(location => {
+                const list = document.getElementById(location === 'docking' ? 'dockingList' : 
+                                                   location === 'missions' ? 'missionsList' : 
+                                                   `day-${location}`);
+                if (list) {
+                    const taskElement = list.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskElement) {
+                        const textArea = taskElement.querySelector('.task-text');
+                        if (textArea && textArea.value !== newName) {
+                            textArea.value = newName;
+                            textArea.style.height = 'auto';
+                            textArea.style.height = textArea.scrollHeight + 'px';
+                        }
+                    }
+                }
+            });
+            
+            saveData();
+        }
+        
+        function toggleTaskCompletion(taskId) {
+            saveState();
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey] || !data[weekKey].tasks[taskId]) return;
+            
+            const task = data[weekKey].tasks[taskId];
+            const isCompleted = !task.completedDate;
+            
+            if (isCompleted) {
+                task.completedDate = getTodayDateString();
+                
+                // Check if completed late
+                if (task.originalDueDate && task.originalDueDate < getTodayDateString()) {
+                    task.completedLate = true;
+                }
+            } else {
+                task.completedDate = null;
+                task.completedLate = false;
+            }
+            
+            // Update all linked instances
+            task.linkedLocations.forEach(location => {
+                const list = document.getElementById(location === 'docking' ? 'dockingList' : 
+                                                   location === 'missions' ? 'missionsList' : 
+                                                   `day-${location}`);
+                if (list) {
+                    const taskElement = list.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskElement) {
+                        const checkbox = taskElement.querySelector('.task-checkbox');
+                        checkbox.checked = isCompleted;
+                        taskElement.classList.toggle('completed', isCompleted);
+                    }
+                }
+            });
+            
+            saveData();
+            updateProgress();
+            applyFilters();
+        }
+        
+        function cycleCategory(taskId) {
+            saveState();
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey] || !data[weekKey].tasks[taskId]) return;
+            
+            const task = data[weekKey].tasks[taskId];
+            const activeCategories = categories.filter(c => c.isActive);
+            
+            // Find current category index
+            let currentIndex = activeCategories.findIndex(c => c.id === task.category);
+            if (currentIndex === -1) currentIndex = -1;
+            
+            // Cycle to next category
+            currentIndex = (currentIndex + 1) % (activeCategories.length + 1);
+            task.category = currentIndex === activeCategories.length ? 'cat-none' : activeCategories[currentIndex].id;
+            
+            // Update all linked instances
+            task.linkedLocations.forEach(location => {
+                const list = document.getElementById(location === 'docking' ? 'dockingList' : 
+                                                   location === 'missions' ? 'missionsList' : 
+                                                   `day-${location}`);
+                if (list) {
+                    const taskElement = list.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskElement) {
+                        const dot = taskElement.querySelector('.category-dot');
+                        dot.className = `category-dot ${task.category}`;
+                    }
+                }
+            });
+            
+            saveData();
+            updateProgress();
+        }
+        
+        function toggleStar(taskId) {
+            saveState();
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey] || !data[weekKey].tasks[taskId]) return;
+            
+            const task = data[weekKey].tasks[taskId];
+            const isStarred = task.linkedLocations.includes('missions');
+            
+            if (isStarred) {
+                // Remove from missions
+                task.linkedLocations = task.linkedLocations.filter(loc => loc !== 'missions');
+                const missionsList = document.getElementById('missionsList');
+                const missionTask = missionsList.querySelector(`[data-task-id="${taskId}"]`);
+                if (missionTask) missionTask.remove();
+            } else {
+                // Add to missions
+                task.linkedLocations.push('missions');
+                const missionsList = document.getElementById('missionsList');
+                const missionTask = createTaskElement(taskId, task.name, !!task.completedDate, 
+                                                     task.category, true, 'missions');
+                missionsList.appendChild(missionTask);
+            }
+            
+            // Update star buttons
+            task.linkedLocations.forEach(location => {
+                if (location !== 'missions') {
+                    const list = document.getElementById(location === 'docking' ? 'dockingList' : `day-${location}`);
+                    if (list) {
+                        const taskElement = list.querySelector(`[data-task-id="${taskId}"]`);
+                        if (taskElement) {
+                            const starBtn = taskElement.querySelector('.star-btn');
+                            if (starBtn) {
+                                starBtn.classList.toggle('starred', !isStarred);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            saveData();
+            updateProgress();
+        }
+        
+        function deleteTask(taskId) {
+            saveState();
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey] || !data[weekKey].tasks[taskId]) return;
+            
+            const task = data[weekKey].tasks[taskId];
+            
+            // Check if recurring
+            if (task.recurringId) {
+                recurringTaskId = taskId;
+                recurringActionType = 'delete';
+                document.getElementById('recurringMessage').textContent = 
+                    'This is part of a recurring series. Delete:';
+                document.getElementById('recurringModal').classList.add('active');
+                return;
+            }
+            
+            // Remove from all locations
+            task.linkedLocations.forEach(location => {
+                const list = document.getElementById(location === 'docking' ? 'dockingList' : 
+                                                   location === 'missions' ? 'missionsList' : 
+                                                   `day-${location}`);
+                if (list) {
+                    const taskElement = list.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskElement) taskElement.remove();
+                }
+            });
+            
+            delete data[weekKey].tasks[taskId];
+            saveData();
+            updateProgress();
+        }
+        
+        // Drag and Drop
+        function handleDragStart(e) {
+            const taskId = e.target.dataset.taskId;
+            const weekKey = getWeekKey(currentWeekStart);
+            
+            // Prevent dragging from Critical Maneuvers
+            if (e.target.closest('#missionsList')) {
+                e.preventDefault();
+                return;
+            }
+            
+            draggedElement = e.target;
+            draggedFrom = e.target.parentElement.id;
+            e.target.classList.add('dragging');
+            
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.innerHTML);
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedElement = null;
+            draggedFrom = null;
+            
+            // Remove drag-over class from all columns
+            document.querySelectorAll('.day-column').forEach(col => {
+                col.classList.remove('drag-over');
+            });
+        }
+        
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            
+            e.dataTransfer.dropEffect = 'move';
+            
+            const dayColumn = e.target.closest('.day-column');
+            if (dayColumn && !dayColumn.classList.contains('drag-over')) {
+                dayColumn.classList.add('drag-over');
+            }
+            
+            return false;
+        }
+        
+        function handleDragLeave(e) {
+            const dayColumn = e.target.closest('.day-column');
+            if (dayColumn && !dayColumn.contains(e.relatedTarget)) {
+                dayColumn.classList.remove('drag-over');
+            }
+        }
+        
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            const dayColumn = e.target.closest('.day-column');
+            if (!dayColumn || !draggedElement) return false;
+            
+            saveState();
+            
+            const taskId = draggedElement.dataset.taskId;
+            const weekKey = getWeekKey(currentWeekStart);
+            const task = data[weekKey].tasks[taskId];
+            
+            if (!task) return false;
+            
+            // Check if recurring
+            if (task.recurringId && draggedFrom !== 'dockingList') {
+                recurringTaskId = taskId;
+                recurringActionType = 'move';
+                recurringAction = () => {
+                    performMove(taskId, dayColumn);
+                };
+                document.getElementById('recurringMessage').textContent = 
+                    'This is part of a recurring series. Move:';
+                document.getElementById('recurringModal').classList.add('active');
+                return false;
+            }
+            
+            performMove(taskId, dayColumn);
+            return false;
+        }
+        
+        function performMove(taskId, dayColumn) {
+            const weekKey = getWeekKey(currentWeekStart);
+            const task = data[weekKey].tasks[taskId];
+            const newDay = dayColumn.dataset.day;
+            const dayList = dayColumn.querySelector('.task-list');
+            
+            // Remove from original location
+            if (draggedFrom === 'dockingList') {
+                // Remove from docking station
+                task.linkedLocations = task.linkedLocations.filter(loc => loc !== 'docking');
+                draggedElement.remove();
+            } else {
+                // Moving from one day to another
+                const oldDay = draggedFrom.replace('day-', '');
+                task.linkedLocations = task.linkedLocations.filter(loc => loc !== oldDay);
+                draggedElement.remove();
+            }
+            
+            // Add to new location
+            task.linkedLocations.push(newDay);
+            task.status = 'scheduled';
+            task.scheduledDate = getDateForDay(currentWeekStart, newDay);
+            task.originalDueDate = task.scheduledDate;
+            
+            // Create new element
+            const newTaskElement = createTaskElement(taskId, task.name, !!task.completedDate, 
+                                                   task.category, task.linkedLocations.includes('missions'), newDay);
+            dayList.appendChild(newTaskElement);
+            
+            // Remove drag-over class
+            dayColumn.classList.remove('drag-over');
+            
+            saveData();
+            updateProgress();
+            checkOverdueTasks();
+        }
+        
+        function getDateForDay(weekStart, dayName) {
+            const dayIndex = days.indexOf(dayName);
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + dayIndex);
+            return date.toISOString().split('T')[0];
+        }
+        
+        // Progress tracking
+        function updateProgress() {
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey]) return;
+            
+            const tasks = Object.values(data[weekKey].tasks);
+            const scheduledTasks = tasks.filter(t => t.status === 'scheduled');
+            const completedTasks = scheduledTasks.filter(t => t.completedDate);
+            const completedLateTasks = completedTasks.filter(t => t.completedLate);
+            
+            const percentage = scheduledTasks.length > 0 ? 
+                Math.round((completedTasks.length / scheduledTasks.length) * 100) : 0;
+            
+            document.getElementById('progressPercentage').textContent = `${percentage}%`;
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            
+            // Category breakdown
+            const categoryStats = {};
+            categories.forEach(cat => {
+                if (cat.isActive) {
+                    const catTasks = scheduledTasks.filter(t => t.category === cat.id);
+                    const catCompleted = catTasks.filter(t => t.completedDate);
+                    if (catTasks.length > 0) {
+                        const catPercentage = Math.round((catCompleted.length / catTasks.length) * 100);
+                        categoryStats[cat.id] = {
+                            name: cat.name,
+                            completed: catCompleted.length,
+                            total: catTasks.length,
+                            percentage: catPercentage
+                        };
+                    }
+                }
+            });
+            
+            const summaryHtml = Object.values(categoryStats).map(stat => 
+                `<div class="category-stat">${stat.name}: ${stat.completed}/${stat.total} (${stat.percentage}%)</div>`
+            ).join('');
+            
+            const completedLateHtml = completedLateTasks.length > 0 ? 
+                `<div class="category-stat" style="color: var(--cat-4);">Completed Late: ${completedLateTasks.length} tasks</div>` : '';
+            
+            document.getElementById('categorySummary').innerHTML = summaryHtml + completedLateHtml;
+        }
+        
+        // Filter functionality
+        function filterTasks(filter) {
+            currentFilter = filter;
+            
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-filter') === filter || 
+                    (filter === 'all' && btn.textContent === 'All')) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            applyFilters();
+        }
+        
+        function toggleCompletedVisibility() {
+            hideCompleted = document.getElementById('hideCompleted').checked;
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey]) return;
+            
+            document.querySelectorAll('.task-item').forEach(taskElement => {
+                const taskId = taskElement.dataset.taskId;
+                const task = data[weekKey].tasks[taskId];
+                if (!task) return;
+                
+                let shouldShow = true;
+                
+                // Category filter
+                if (currentFilter !== 'all' && task.category !== currentFilter) {
+                    shouldShow = false;
+                }
+                
+                // Completed filter
+                if (hideCompleted && task.completedDate) {
+                    shouldShow = false;
+                }
+                
+                taskElement.style.display = shouldShow ? 'flex' : 'none';
+            });
+        }
+        
+        // Update category filters
+        function updateCategoryFilters() {
+            const filterContainer = document.getElementById('categoryFilters');
+            filterContainer.innerHTML = '';
+            
+            categories.forEach(cat => {
+                if (cat.isActive) {
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn';
+                    btn.setAttribute('data-filter', cat.id);
+                    btn.onclick = () => filterTasks(cat.id);
+                    
+                    const dot = document.createElement('span');
+                    dot.className = 'color-dot';
+                    dot.style.background = cat.color;
+                    
+                    const text = document.createTextNode(cat.name);
+                    
+                    btn.appendChild(dot);
+                    btn.appendChild(text);
+                    filterContainer.appendChild(btn);
+                }
+            });
+        }
+        
+        // Check for overdue tasks
+        function checkOverdueTasks() {
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey]) return;
+            
+            const today = getTodayDateString();
+            
+            Object.values(data[weekKey].tasks).forEach(task => {
+                if (task.status === 'scheduled' && !task.completedDate && 
+                    task.originalDueDate && task.originalDueDate < today) {
+                    task.wasOverdue = true;
+                    
+                    // Update visual state
+                    task.linkedLocations.forEach(location => {
+                        const list = document.getElementById(location === 'docking' ? 'dockingList' : 
+                                                           location === 'missions' ? 'missionsList' : 
+                                                           `day-${location}`);
+                        if (list) {
+                            const taskElement = list.querySelector(`[data-task-id="${task.id}"]`);
+                            if (taskElement) {
+                                taskElement.classList.add('overdue');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Templates
+        function saveAsTemplate() {
+            const name = prompt('Template name:');
+            if (!name) return;
+            
+            const weekKey = getWeekKey(currentWeekStart);
+            const templateId = `template-${Date.now()}`;
+            
+            if (Object.keys(templates).length >= 5) {
+                showNotification('Maximum 5 templates allowed. Delete one first.', 'error');
+                return;
+            }
+            
+            templates[templateId] = {
+                id: templateId,
+                name: name,
+                created: getTodayDateString(),
+                tasks: JSON.parse(JSON.stringify(data[weekKey]?.tasks || {}))
+            };
+            
+            // Clean template tasks
+            Object.values(templates[templateId].tasks).forEach(task => {
+                task.completedDate = null;
+                task.completedLate = false;
+                task.wasOverdue = false;
+            });
+            
+            saveTemplates();
+            loadTemplates();
+            showNotification('Template saved!', 'success');
+        }
+        
+        function loadTemplate(templateId) {
+            if (!templates[templateId]) return;
+            
+            saveState();
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey]) data[weekKey] = { tasks: {}, deepSpace: '' };
+            
+            // Merge template tasks with current week
+            const templateTasks = JSON.parse(JSON.stringify(templates[templateId].tasks));
+            Object.values(templateTasks).forEach(task => {
+                const newId = generateTaskId();
+                task.id = newId;
+                task.createdDate = getTodayDateString();
+                task.scheduledDate = task.linkedLocations.includes('docking') ? null : 
+                                   getDateForDay(currentWeekStart, task.linkedLocations.find(loc => days.includes(loc)));
+                task.originalDueDate = task.scheduledDate;
+                
+                data[weekKey].tasks[newId] = task;
+            });
+            
+            saveData();
+            loadWeek();
+            showNotification('Template loaded!', 'success');
+        }
+        
+        function deleteTemplate(templateId) {
+            if (confirm('Delete this template?')) {
+                delete templates[templateId];
+                saveTemplates();
+                loadTemplates();
+                showNotification('Template deleted!', 'success');
+            }
+        }
+        
+        function loadTemplates() {
+            const container = document.getElementById('templatesList');
+            container.innerHTML = '';
+            
+            Object.values(templates).forEach(template => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                
+                card.innerHTML = `
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-date">Created: ${formatDate(template.created)}</div>
+                    <div class="template-actions">
+                        <button class="template-btn" onclick="loadTemplate('${template.id}')">Load</button>
+                        <button class="template-btn delete" onclick="deleteTemplate('${template.id}')">Delete</button>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        // Archives
+        function loadArchives() {
+            const container = document.getElementById('archivesList');
+            container.innerHTML = '';
+            
+            const today = getTodayDateString();
+            const sortedWeeks = Object.keys(data)
+                .filter(weekKey => weekKey < today)
+                .sort((a, b) => b.localeCompare(a));
+            
+            sortedWeeks.forEach(weekKey => {
+                const weekData = data[weekKey];
+                const tasks = Object.values(weekData.tasks);
+                const completed = tasks.filter(t => t.completedDate).length;
+                const total = tasks.filter(t => t.status === 'scheduled').length;
+                
+                const card = document.createElement('div');
+                card.className = 'archive-card';
+                
+                card.innerHTML = `
+                    <div class="archive-week">${formatWeekDisplay(new Date(weekKey))}</div>
+                    <div class="archive-stats">${completed} of ${total} tasks completed</div>
+                    <button class="btn" onclick="viewArchive('${weekKey}')">View</button>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function viewArchive(weekKey) {
+            const weekData = data[weekKey];
+            if (!weekData) return;
+            
+            const content = document.getElementById('archivePreviewContent');
+            content.innerHTML = '';
+            
+            // Header
+            const header = document.createElement('div');
+            header.className = 'archive-preview-header';
+            header.innerHTML = `
+                <div class="archive-preview-week">${formatWeekDisplay(new Date(weekKey))}</div>
+                <div class="archive-preview-stats">
+                    ${Object.values(weekData.tasks).filter(t => t.completedDate).length} of 
+                    ${Object.values(weekData.tasks).filter(t => t.status === 'scheduled').length} tasks completed
+                </div>
+            `;
+            content.appendChild(header);
+            
+            // Tasks by day
+            days.forEach(day => {
+                const dayTasks = Object.values(weekData.tasks)
+                    .filter(t => t.linkedLocations.includes(day));
+                
+                if (dayTasks.length > 0) {
+                    const section = document.createElement('div');
+                    section.className = 'archive-preview-section';
+                    
+                    const title = document.createElement('div');
+                    title.className = 'archive-preview-title';
+                    title.textContent = day;
+                    section.appendChild(title);
+                    
+                    dayTasks.forEach(task => {
+                        const taskDiv = document.createElement('div');
+                        taskDiv.className = 'archive-task';
+                        if (task.completedDate) taskDiv.classList.add('completed');
+                        if (task.completedLate) taskDiv.classList.add('completed-late');
+                        
+                        const dot = document.createElement('div');
+                        dot.className = 'archive-task-dot ' + task.category;
+                        
+                        const text = document.createElement('span');
+                        text.textContent = task.name;
+                        
+                        taskDiv.appendChild(dot);
+                        taskDiv.appendChild(text);
+                        section.appendChild(taskDiv);
+                    });
+                    
+                    content.appendChild(section);
+                }
+            });
+            
+            document.getElementById('archiveModal').classList.add('active');
+        }
+        
+        function hideArchiveModal() {
+            document.getElementById('archiveModal').classList.remove('active');
+        }
+        
+        // Settings
+        function loadSettings() {
+            const container = document.getElementById('categoriesSettings');
+            container.innerHTML = '';
+            
+            categories.forEach((cat, index) => {
+                const setting = document.createElement('div');
+                setting.className = 'category-setting';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = cat.isActive;
+                checkbox.onchange = () => {
+                    hasUnsavedSettings = true;
+                    cat.isActive = checkbox.checked;
+                };
+                
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = cat.name;
+                nameInput.oninput = () => {
+                    hasUnsavedSettings = true;
+                    cat.name = nameInput.value;
+                };
+                
+                const colorSelector = document.createElement('div');
+                colorSelector.className = 'color-selector';
+                
+                categoryColors.forEach(color => {
+                    const colorOption = document.createElement('div');
+                    colorOption.className = 'color-option';
+                    colorOption.style.background = color;
+                    if (cat.color === color) colorOption.classList.add('selected');
+                    
+                    colorOption.onclick = () => {
+                        hasUnsavedSettings = true;
+                        cat.color = color;
+                        colorSelector.querySelectorAll('.color-option').forEach(opt => 
+                            opt.classList.remove('selected'));
+                        colorOption.classList.add('selected');
+                    };
+                    
+                    colorSelector.appendChild(colorOption);
+                });
+                
+                setting.appendChild(checkbox);
+                setting.appendChild(nameInput);
+                setting.appendChild(colorSelector);
+                container.appendChild(setting);
+            });
+            
+            // Load date format
+            document.getElementById('dateFormatSelect').value = dateFormat;
+            document.getElementById('dateFormatSelect').onchange = () => {
+                hasUnsavedSettings = true;
+            };
+        }
+        
+        function saveSettings() {
+            dateFormat = document.getElementById('dateFormatSelect').value;
+            
+            // Update CSS variables for colors
+            const style = document.documentElement.style;
+            categories.forEach((cat, index) => {
+                style.setProperty(`--cat-${index + 1}`, cat.color);
+            });
+            
+            saveCategories();
+            updateCategoryFilters();
+            loadWeek();
+            hasUnsavedSettings = false;
+            showNotification('Settings saved!', 'success');
+        }
+        
+        // Deep Space editor
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('deepSpaceEditor').focus();
+        }
+        
+        function handleDeepSpaceInput() {
+            clearTimeout(deepSpaceTimeout);
+            deepSpaceTimeout = setTimeout(() => {
+                const weekKey = getWeekKey(currentWeekStart);
+                if (!data[weekKey]) data[weekKey] = { tasks: {}, deepSpace: '' };
+                data[weekKey].deepSpace = document.getElementById('deepSpaceEditor').innerHTML;
+                saveData();
+            }, 500);
+        }
+        
+        // Quick Add Modal
+        function showQuickAddModal() {
+            const modal = document.getElementById('quickAddModal');
+            const categorySelect = document.getElementById('quickAddCategory');
+            const weekSelect = document.getElementById('quickAddWeek');
+            
+            // Populate categories
+            categorySelect.innerHTML = '<option value="cat-none">None</option>';
+            categories.forEach(cat => {
+                if (cat.isActive) {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    categorySelect.appendChild(option);
+                }
+            });
+            
+            // Populate weeks
+            weekSelect.innerHTML = '';
+            const actualToday = getMonday(new Date());
+            for (let i = 0; i < 12; i++) {
+                const weekDate = new Date(actualToday);
+                weekDate.setDate(weekDate.getDate() + (i * 7));
+                const option = document.createElement('option');
+                option.value = getWeekKey(weekDate);
+                option.textContent = i === 0 ? 'This Week' : 
+                                   i === 1 ? 'Next Week' : 
+                                   `Week of ${formatDate(weekDate)}`;
+                weekSelect.appendChild(option);
+            }
+            
+            // Set default date for recurrence
+            const untilDate = new Date();
+            untilDate.setMonth(untilDate.getMonth() + 6);
+            document.getElementById('quickAddUntil').value = untilDate.toISOString().split('T')[0];
+            
+            modal.classList.add('active');
+            document.getElementById('quickAddTaskName').focus();
+        }
+        
+        function hideQuickAddModal() {
+            document.getElementById('quickAddModal').classList.remove('active');
+            document.getElementById('quickAddTaskName').value = '';
+            document.getElementById('quickAddRepeats').checked = false;
+            document.getElementById('recurrenceOptions').classList.remove('active');
+        }
+        
+        function toggleRecurrence() {
+            const isChecked = document.getElementById('quickAddRepeats').checked;
+            document.getElementById('recurrenceOptions').classList.toggle('active', isChecked);
+        }
+        
+        function quickAddTask() {
+            const taskName = document.getElementById('quickAddTaskName').value.trim();
+            if (!taskName) {
+                showNotification('Task name is required', 'error');
+                return;
+            }
+            
+            const category = document.getElementById('quickAddCategory').value;
+            const weekKey = document.getElementById('quickAddWeek').value;
+            const dayOrDocking = document.getElementById('quickAddDay').value;
+            const isRecurring = document.getElementById('quickAddRepeats').checked;
+            
+            if (isRecurring) {
+                const frequency = document.getElementById('quickAddFrequency').value;
+                const untilDate = document.getElementById('quickAddUntil').value;
+                createRecurringTasks(taskName, category, weekKey, dayOrDocking, frequency, untilDate);
+            } else {
+                createSingleTask(taskName, category, weekKey, dayOrDocking);
+            }
+            
+            hideQuickAddModal();
+            if (weekKey === getWeekKey(currentWeekStart)) {
+                loadWeek();
+            }
+            showNotification('Task added!', 'success');
+        }
+        
+        function createSingleTask(taskName, category, weekKey, dayOrDocking) {
+            if (!data[weekKey]) data[weekKey] = { tasks: {}, deepSpace: '' };
+            
+            const taskId = generateTaskId();
+            const task = {
+                id: taskId,
+                name: taskName,
+                category: category,
+                status: dayOrDocking === 'docking' ? 'unscheduled' : 'scheduled',
+                createdDate: getTodayDateString(),
+                scheduledDate: dayOrDocking === 'docking' ? weekKey : 
+                             getDateForDay(new Date(weekKey), dayOrDocking),
+                completedDate: null,
+                originalDueDate: dayOrDocking === 'docking' ? null : 
+                               getDateForDay(new Date(weekKey), dayOrDocking),
+                wasOverdue: false,
+                completedLate: false,
+                linkedLocations: dayOrDocking === 'docking' ? ['docking'] : [dayOrDocking],
+                recurringId: null
+            };
+            
+            data[weekKey].tasks[taskId] = task;
+            saveData();
+        }
+        
+        function createRecurringTasks(taskName, category, startWeekKey, dayOrDocking, frequency, untilDate) {
+            const recurringId = `recurring-${Date.now()}`;
+            const startDate = new Date(startWeekKey);
+            const endDate = new Date(untilDate);
+            let currentDate = new Date(startDate);
+            let tasksCreated = 0;
+            
+            while (currentDate <= endDate && tasksCreated < 52) { // Max 1 year
+                const weekKey = getWeekKey(getMonday(currentDate));
+                if (!data[weekKey]) data[weekKey] = { tasks: {}, deepSpace: '' };
+                
+                const taskId = generateTaskId();
+                const task = {
+                    id: taskId,
+                    name: taskName,
+                    category: category,
+                    status: dayOrDocking === 'docking' ? 'unscheduled' : 'scheduled',
+                    createdDate: getTodayDateString(),
+                    scheduledDate: dayOrDocking === 'docking' ? weekKey : 
+                                 getDateForDay(new Date(weekKey), dayOrDocking),
+                    completedDate: null,
+                    originalDueDate: dayOrDocking === 'docking' ? null : 
+                                   getDateForDay(new Date(weekKey), dayOrDocking),
+                    wasOverdue: false,
+                    completedLate: false,
+                    linkedLocations: dayOrDocking === 'docking' ? ['docking'] : [dayOrDocking],
+                    recurringId: recurringId
+                };
+                
+                data[weekKey].tasks[taskId] = task;
+                tasksCreated++;
+                
+                // Increment date based on frequency
+                switch (frequency) {
+                    case 'day':
+                        currentDate.setDate(currentDate.getDate() + 1);
+                        break;
+                    case 'week':
+                        currentDate.setDate(currentDate.getDate() + 7);
+                        break;
+                    case 'month':
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                        break;
+                }
+            }
+            
+            saveData();
+            showNotification(`${tasksCreated} recurring tasks created`, 'success');
+        }
+        
+        // Recurring task modal
+        function hideRecurringModal() {
+            document.getElementById('recurringModal').classList.remove('active');
+            recurringTaskId = null;
+            recurringActionType = null;
+            recurringAction = null;
+        }
+        
+        function executeRecurringAction() {
+            const action = document.querySelector('input[name="recurringAction"]:checked').value;
+            const weekKey = getWeekKey(currentWeekStart);
+            const task = data[weekKey].tasks[recurringTaskId];
+            
+            if (recurringActionType === 'delete') {
+                if (action === 'future') {
+                    // Delete all future instances
+                    const recurringId = task.recurringId;
+                    Object.keys(data).forEach(wk => {
+                        if (wk >= weekKey && data[wk].tasks) {
+                            Object.keys(data[wk].tasks).forEach(taskId => {
+                                if (data[wk].tasks[taskId].recurringId === recurringId) {
+                                    delete data[wk].tasks[taskId];
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    // Just delete this instance
+                    task.recurringId = null;
+                    deleteTask(recurringTaskId);
+                }
+            } else if (recurringActionType === 'move' && recurringAction) {
+                if (action === 'future') {
+                    // Move all future instances
+                    const recurringId = task.recurringId;
+                    // Complex logic for moving all future instances - simplified for now
+                    showNotification('Moving all future instances - feature in development', 'info');
+                } else {
+                    // Just move this instance
+                    task.recurringId = null;
+                    recurringAction();
+                }
+            }
+            
+            hideRecurringModal();
+            loadWeek();
+        }
+        
+        // Export/Import
+        function showExportModal() {
+            document.getElementById('exportModal').classList.add('active');
+        }
+        
+        function hideExportModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+        
+        function executeExport() {
+            const format = document.querySelector('input[name="exportFormat"]:checked').value;
+            
+            switch (format) {
+                case 'json':
+                    exportJSON();
+                    break;
+                case 'csv':
+                    exportCSV();
+                    break;
+                case 'txt':
+                    exportTXT();
+                    break;
+            }
+            
+            hideExportModal();
+        }
+        
+        function exportJSON() {
+            const exportData = {
+                version: '1.0',
+                exportDate: getTodayDateString(),
+                data: data,
+                categories: categories,
+                templates: templates,
+                dateFormat: dateFormat
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mission-control-${getTodayDateString()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Data exported as JSON', 'success');
+        }
+        
+        function exportCSV() {
+            let csv = 'Week,Day,Task,Category,Status,Created,Scheduled,Completed,Was Overdue,Completed Late\n';
+            
+            Object.keys(data).forEach(weekKey => {
+                const weekData = data[weekKey];
+                Object.values(weekData.tasks).forEach(task => {
+                    const category = categories.find(c => c.id === task.category);
+                    const day = task.linkedLocations.find(loc => days.includes(loc)) || 'Docking Station';
+                    
+                    csv += `"${formatWeekDisplay(new Date(weekKey))}",`;
+                    csv += `"${day}",`;
+                    csv += `"${task.name.replace(/"/g, '""')}",`;
+                    csv += `"${category ? category.name : 'None'}",`;
+                    csv += `"${task.status}",`;
+                    csv += `"${task.createdDate || ''}",`;
+                    csv += `"${task.scheduledDate || ''}",`;
+                    csv += `"${task.completedDate || ''}",`;
+                    csv += `"${task.wasOverdue ? 'Yes' : 'No'}",`;
+                    csv += `"${task.completedLate ? 'Yes' : 'No'}"\n`;
+                });
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mission-control-${getTodayDateString()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Data exported as CSV', 'success');
+        }
+        
+        function exportTXT() {
+            let text = 'MISSION CONTROL EXPORT\n';
+            text += '======================\n\n';
+            text += `Export Date: ${formatDate(new Date())}\n\n`;
+            
+            Object.keys(data).sort().forEach(weekKey => {
+                const weekData = data[weekKey];
+                const tasks = Object.values(weekData.tasks);
+                
+                if (tasks.length > 0) {
+                    text += `${formatWeekDisplay(new Date(weekKey))}\n`;
+                    text += '-'.repeat(30) + '\n\n';
+                    
+                    days.forEach(day => {
+                        const dayTasks = tasks.filter(t => t.linkedLocations.includes(day));
+                        if (dayTasks.length > 0) {
+                            text += `${day.toUpperCase()}\n`;
+                            dayTasks.forEach(task => {
+                                const status = task.completedDate ? '[X]' : '[ ]';
+                                const category = categories.find(c => c.id === task.category);
+                                text += `  ${status} ${task.name}`;
+                                if (category) text += ` (${category.name})`;
+                                if (task.completedLate) text += ' - LATE';
+                                text += '\n';
+                            });
+                            text += '\n';
+                        }
+                    });
+                    
+                    text += '\n';
+                }
+            });
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mission-control-${getTodayDateString()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Data exported as text', 'success');
+        }
+        
+        function importData() {
+            document.getElementById('importFile').click();
+        }
+        
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (importedData.data) data = importedData.data;
+                    if (importedData.categories) categories = importedData.categories;
+                    if (importedData.templates) templates = importedData.templates;
+                    if (importedData.dateFormat) dateFormat = importedData.dateFormat;
+                    
+                    saveAll();
+                    loadWeek();
+                    updateCategoryFilters();
+                    showNotification('Data imported successfully!', 'success');
+                } catch (error) {
+                    showNotification('Error importing file', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        // Backup
+        function backupNow() {
+            const backupData = {
+                version: '1.0',
+                backupDate: new Date().toISOString(),
+                data: data,
+                categories: categories,
+                templates: templates,
+                dateFormat: dateFormat
+            };
+            
+            localStorage.setItem('missionControlBackup', JSON.stringify(backupData));
+            localStorage.setItem('missionControlBackupDate', new Date().toISOString());
+            showNotification('Backup saved!', 'success');
+        }
+        
+        // Auto-backup
+        function autoBackup() {
+            const backups = JSON.parse(localStorage.getItem('missionControlAutoBackups') || '[]');
+            const newBackup = {
+                timestamp: new Date().toISOString(),
+                data: JSON.stringify({
+                    data: data,
+                    categories: categories,
+                    templates: templates,
+                    dateFormat: dateFormat
+                })
+            };
+            
+            backups.push(newBackup);
+            if (backups.length > 5) {
+                backups.shift(); // Keep only last 5
+            }
+            
+            localStorage.setItem('missionControlAutoBackups', JSON.stringify(backups));
+        }
+        
+        // Undo/Redo
+        function saveState() {
+            const state = {
+                weekKey: getWeekKey(currentWeekStart),
+                data: JSON.parse(JSON.stringify(data)),
+                categories: JSON.parse(JSON.stringify(categories)),
+                templates: JSON.parse(JSON.stringify(templates))
+            };
+            
+            undoStack.push(state);
+            if (undoStack.length > 10) {
+                undoStack.shift();
+            }
+            
+            redoStack = [];
+            updateUndoRedoButtons();
+        }
+        
+        function undo() {
+            if (undoStack.length === 0) return;
+            
+            const currentState = {
+                weekKey: getWeekKey(currentWeekStart),
+                data: JSON.parse(JSON.stringify(data)),
+                categories: JSON.parse(JSON.stringify(categories)),
+                templates: JSON.parse(JSON.stringify(templates))
+            };
+            
+            redoStack.push(currentState);
+            
+            const previousState = undoStack.pop();
+            data = previousState.data;
+            categories = previousState.categories;
+            templates = previousState.templates;
+            
+            saveAll();
+            loadWeek();
+            updateCategoryFilters();
+            updateUndoRedoButtons();
+        }
+        
+        function redo() {
+            if (redoStack.length === 0) return;
+            
+            const currentState = {
+                weekKey: getWeekKey(currentWeekStart),
+                data: JSON.parse(JSON.stringify(data)),
+                categories: JSON.parse(JSON.stringify(categories)),
+                templates: JSON.parse(JSON.stringify(templates))
+            };
+            
+            undoStack.push(currentState);
+            
+            const nextState = redoStack.pop();
+            data = nextState.data;
+            categories = nextState.categories;
+            templates = nextState.templates;
+            
+            saveAll();
+            loadWeek();
+            updateCategoryFilters();
+            updateUndoRedoButtons();
+        }
+        
+        function updateUndoRedoButtons() {
+            document.getElementById('undoBtn').disabled = undoStack.length === 0;
+            document.getElementById('redoBtn').disabled = redoStack.length === 0;
+        }
+        
+        // Print functionality
+        function printWeek() {
+            window.print();
+        }
+        
+        // Save and load data
+        function saveCurrentWeekData() {
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey]) return;
+            
+            // Clean up empty tasks before saving
+            Object.keys(data[weekKey].tasks).forEach(taskId => {
+                const task = data[weekKey].tasks[taskId];
+                if (!task.name || task.name.trim() === '') {
+                    delete data[weekKey].tasks[taskId];
+                }
+            });
+            
+            saveData();
+        }
+        
+        function saveData() {
+            localStorage.setItem('missionControlData', JSON.stringify(data));
+        }
+        
+        function saveCategories() {
+            localStorage.setItem('missionControlCategories', JSON.stringify(categories));
+        }
+        
+        function saveTemplates() {
+            localStorage.setItem('missionControlTemplates', JSON.stringify(templates));
+        }
+        
+        function saveDateFormat() {
+            localStorage.setItem('missionControlDateFormat', dateFormat);
+        }
+        
+        function saveAll() {
+            saveData();
+            saveCategories();
+            saveTemplates();
+            saveDateFormat();
+        }
+        
+        function loadData() {
+            const savedData = localStorage.getItem('missionControlData');
+            if (savedData) {
+                data = JSON.parse(savedData);
+            }
+            
+            const savedCategories = localStorage.getItem('missionControlCategories');
+            if (savedCategories) {
+                categories = JSON.parse(savedCategories);
+            }
+            
+            const savedTemplates = localStorage.getItem('missionControlTemplates');
+            if (savedTemplates) {
+                templates = JSON.parse(savedTemplates);
+            }
+            
+            const savedDateFormat = localStorage.getItem('missionControlDateFormat');
+            if (savedDateFormat) {
+                dateFormat = savedDateFormat;
+            }
+        }
+        
+        function loadWeek() {
+            document.getElementById('weekDisplay').textContent = formatWeekDisplay(currentWeekStart);
+            
+            const weekKey = getWeekKey(currentWeekStart);
+            if (!data[weekKey]) {
+                data[weekKey] = { tasks: {}, deepSpace: '' };
+            }
+            
+            // Clear all lists
+            document.getElementById('dockingList').innerHTML = '';
+            document.getElementById('missionsList').innerHTML = '';
+            days.forEach(day => {
+                document.getElementById(`day-${day}`).innerHTML = '';
+            });
+            
+            // Load tasks
+            const weekData = data[weekKey];
+            Object.values(weekData.tasks).forEach(task => {
+                task.linkedLocations.forEach(location => {
+                    let list;
+                    let target;
+                    
+                    if (location === 'docking') {
+                        list = document.getElementById('dockingList');
+                        target = 'docking';
+                    } else if (location === 'missions') {
+                        list = document.getElementById('missionsList');
+                        target = 'missions';
+                    } else if (days.includes(location)) {
+                        list = document.getElementById(`day-${location}`);
+                        target = location;
+                    }
+                    
+                    if (list) {
+                        const taskElement = createTaskElement(
+                            task.id, 
+                            task.name, 
+                            !!task.completedDate,
+                            task.category,
+                            task.linkedLocations.includes('missions'),
+                            target
+                        );
+                        
+                        if (task.wasOverdue && !task.completedDate) {
+                            taskElement.classList.add('overdue');
+                        }
+                        
+                        list.appendChild(taskElement);
+                    }
+                });
+            });
+            
+            // Load deep space content
+            document.getElementById('deepSpaceEditor').innerHTML = weekData.deepSpace || '';
+            
+            updateProgress();
+            applyFilters();
+            checkOverdueTasks();
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+            
+            if (ctrlKey && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((ctrlKey && e.key === 'y') || (ctrlKey && e.shiftKey && e.key === 'z')) {
+                e.preventDefault();
+                redo();
+            }
+        });
+        
+        // Initialize
+        function init() {
+            loadData();
+            createCalendarDays();
+            loadWeek();
+            updateCategoryFilters();
+            updateUndoRedoButtons();
+            
+            // Set up event listeners
+            document.getElementById('deepSpaceEditor').addEventListener('input', handleDeepSpaceInput);
+            
+            // Auto-save every 30 seconds
+            setInterval(() => {
+                saveCurrentWeekData();
+            }, 30000);
+            
+            // Auto-backup every hour
+            setInterval(autoBackup, 3600000);
+            
+            // Prevent critical maneuvers from accepting drops
+            const missionsSection = document.getElementById('missionsSection');
+            missionsSection.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'none';
+            });
+            missionsSection.addEventListener('drop', (e) => {
+                e.preventDefault();
+            });
+        }
+        
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
